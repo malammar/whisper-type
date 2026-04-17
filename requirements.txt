@@ -1,0 +1,7 @@
+wyoming
+sounddevice
+numpy
+pystray
+pillow
+python-xlib
+tomli; python_version < "3.11"

@@ -1,0 +1,22 @@
+[server]
+# Wyoming faster-whisper host and port
+host = "127.0.0.1"
+port = 10300
+
+[audio]
+sample_rate   = 16000
+channels      = 1
+chunk_samples = 4096
+
+[typing]
+delay_ms        = 8      # ms between keystrokes (xdotool --delay)
+pre_type_sleep  = 0.15   # seconds to wait before typing so focus returns
+
+[hotkey]
+debounce = 0.4   # seconds to suppress re-trigger after a toggle
+
+[beep]
+start_hz  = 880    # pitch when recording starts
+stop_hz   = 440    # pitch when recording stops
+duration  = 0.12   # seconds
+volume    = 0.35   # 0.0 – 1.0
