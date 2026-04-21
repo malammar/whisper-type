@@ -163,10 +163,11 @@ _tray: pystray.Icon | None = None
 
 _COLOURS  = {IDLE: "#5a5a5a", RECORDING: "#e03030", PROCESSING: "#e09000"}
 _TOOLTIPS = {
-    IDLE:       "Whisper Type — idle",
-    RECORDING:  "Whisper Type — recording…",
-    PROCESSING: "Whisper Type — transcribing…",
+    IDLE:       "Whisper Type - idle",
+    RECORDING:  "Whisper Type - recording...",
+    PROCESSING: "Whisper Type - transcribing...",
 }
+
 
 
 def _make_icon(state: str) -> Image.Image:
