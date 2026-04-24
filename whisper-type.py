@@ -157,6 +157,8 @@ _chunks: list   = []
 _lock           = threading.Lock()
 _next_toggle_at = 0.0
 _tray: pystray.Icon | None = None
+_dead_stream_count = 0
+_DEAD_STREAM_THRESHOLD = 3  # restart after this many consecutive empty recordings
 
 
 # ── Tray icon ──────────────────────────────────────────────────────────────────
@@ -451,10 +453,17 @@ def _stop_recording():
 
 
 def _process(chunks: list):
+    global _dead_stream_count
     if not chunks:
-        _log("⚠  Nothing recorded.")
+        _dead_stream_count += 1
+        _log(f"⚠  Nothing recorded. (stream check {_dead_stream_count}/{_DEAD_STREAM_THRESHOLD})")
+        if _dead_stream_count >= _DEAD_STREAM_THRESHOLD:
+            _log("⚠  Audio stream appears dead — restarting service.")
+            import os, signal as _signal
+            os.kill(os.getpid(), _signal.SIGTERM)
         _set_state(IDLE)
         return
+    _dead_stream_count = 0
     _set_state(PROCESSING)
     _log("⏹  Transcribing…")
     audio = np.concatenate(chunks, axis=0).flatten()
@@ -521,7 +530,8 @@ def _on_signal_toggle(signum=None, frame=None):
 # ── Misc ───────────────────────────────────────────────────────────────────────
 
 def _log(msg: str):
-    print(msg, flush=True)
+    ts = time.strftime("%H:%M:%S")
+    print(f"[{ts}] {msg}", flush=True)
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
