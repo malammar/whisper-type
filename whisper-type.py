@@ -159,6 +159,9 @@ _next_toggle_at = 0.0
 _tray: pystray.Icon | None = None
 _dead_stream_count = 0
 _DEAD_STREAM_THRESHOLD = 3  # restart after this many consecutive empty recordings
+_last_audio_ts: float = 0.0
+AUDIO_WATCHDOG_INTERVAL = 5.0   # seconds between watchdog checks
+AUDIO_WATCHDOG_TIMEOUT  = 10.0  # seconds of silence before declaring stream dead
 
 
 # ── Tray icon ──────────────────────────────────────────────────────────────────
@@ -459,8 +462,7 @@ def _process(chunks: list):
         _log(f"⚠  Nothing recorded. (stream check {_dead_stream_count}/{_DEAD_STREAM_THRESHOLD})")
         if _dead_stream_count >= _DEAD_STREAM_THRESHOLD:
             _log("⚠  Audio stream appears dead — restarting service.")
-            import os, signal as _signal
-            os.kill(os.getpid(), _signal.SIGTERM)
+            os._exit(1)
         _set_state(IDLE)
         return
     _dead_stream_count = 0
@@ -497,7 +499,21 @@ def _type(text: str):
 
 # ── Audio callback ─────────────────────────────────────────────────────────────
 
+def _audio_watchdog():
+    """Background thread: restart the service if the audio stream stops delivering samples."""
+    time.sleep(AUDIO_WATCHDOG_TIMEOUT)  # grace period for initial startup
+    while True:
+        time.sleep(AUDIO_WATCHDOG_INTERVAL)
+        gap = time.monotonic() - _last_audio_ts
+        if gap > AUDIO_WATCHDOG_TIMEOUT:
+            _log(f"⚠  Audio watchdog: no samples for {gap:.0f}s — restarting service.")
+            os._exit(1)
+            break
+
+
 def _audio_cb(indata, frames, time_info, status):
+    global _last_audio_ts
+    _last_audio_ts = time.monotonic()
     if status:
         print(f"[audio] {status}", file=sys.stderr)
     if _state == RECORDING:
@@ -556,6 +572,7 @@ def main():
             samplerate=SAMPLE_RATE, channels=CHANNELS,
             dtype="float32", callback=_audio_cb,
         ):
+            threading.Thread(target=_audio_watchdog, daemon=True).start()
             while True:
                 signal.pause()
     finally:
