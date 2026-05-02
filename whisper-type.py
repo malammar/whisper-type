@@ -315,7 +315,13 @@ def _update_gnome_shortcut(binding: str):
         _log(f"[gnome] could not update shortcut: {e}")
 
 
+_DESKTOP = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+_NOTIFY_ENABLED = any(de in _DESKTOP for de in ("gnome", "unity", "pantheon"))
+
+
 def _notify(msg: str):
+    if not _NOTIFY_ENABLED:
+        return
     try:
         subprocess.Popen(
             ["notify-send", "-a", "whisper-type", "-t", "4000", "Whisper Type", msg],
